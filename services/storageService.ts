@@ -8,93 +8,129 @@ const DATA_KEY = 'main_data';
 const OLD_LOCAL_STORAGE_KEY = 'hardi_store_db_v3';
 
 // ✅ VERIFICATION LOG
-console.log("DB FILE VERSION: 2026-01-12");
+console.log("DB FILE VERSION: 2026-01-12 [FREEZE BUG FIX]");
 
-// -----------------------------------------------------------------------------
-// ARCHITECTURE: Memory-First + Robust Open/Close Persistence
-// -----------------------------------------------------------------------------
+// ════════════════════════════════════════════════════════════════════════════
+// ARCHITECTURE: Memory-First + Debounced Persistence with Timeout Protection
+// ════════════════════════════════════════════════════════════════════════════
 
 let memoryCache: AppData | null = null;
 let isInitialized = false;
 let saveQueue: Promise<any> = Promise.resolve();
+let saveTimer: NodeJS.Timeout | null = null;  // ✅ NEW: Debounce timer
 
-// --- Robust DB Helper (User Provided Fix) ---
-// This opens and closes the DB for EVERY operation to ensure no locks remain.
+// --- Robust DB Helper with Timeout Protection ---
+// Opens DB for each operation, ensures locks are released, and aborts stale transactions
 const performDBOperation = <T>(
   mode: IDBTransactionMode,
-  task: (store: IDBObjectStore) => IDBRequest | void
+  task: (store: IDBObjectStore) => IDBRequest | void,
+  timeoutMs: number = 5000  // ✅ NEW: 5 second timeout for safety
 ): Promise<T> => {
   return new Promise((resolve, reject) => {
     const openReq = indexedDB.open(DB_NAME, DB_VERSION);
+    let db: IDBDatabase | null = null;
+    let timeoutHandle: NodeJS.Timeout | null = null;
 
-    openReq.onerror = () => reject(openReq.error);
+    openReq.onerror = () => {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+      reject(openReq.error);
+    };
 
     openReq.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
+      const upgradeDb = (event.target as IDBOpenDBRequest).result;
+      if (!upgradeDb.objectStoreNames.contains(STORE_NAME)) {
+        upgradeDb.createObjectStore(STORE_NAME);
       }
     };
 
     openReq.onsuccess = () => {
-      const db = openReq.result;
+      db = openReq.result;
       let result: any;
 
-      const tx = db.transaction(STORE_NAME, mode);
-      const store = tx.objectStore(STORE_NAME);
-
-      // ✅ ONLY resolve after commit
-      tx.oncomplete = () => {
-        db.close(); // Close immediately to release lock
-        resolve(result as T);
-      };
-
-      tx.onerror = () => {
-        db.close();
-        reject(tx.error);
-      };
-
-      tx.onabort = () => {
-        db.close();
-        reject(new Error("Transaction aborted"));
-      };
+      // ✅ NEW: Set timeout to prevent forever-hung transactions
+      timeoutHandle = setTimeout(() => {
+        if (db) {
+          try {
+            db.close();
+          } catch (e) {
+            // Ignore close errors
+          }
+        }
+        reject(new Error(`IndexedDB operation timeout after ${timeoutMs}ms`));
+      }, timeoutMs);
 
       try {
+        const tx = db.transaction(STORE_NAME, mode);
+        const store = tx.objectStore(STORE_NAME);
+
+        // ✅ ONLY resolve after transaction commits
+        tx.oncomplete = () => {
+          if (timeoutHandle) clearTimeout(timeoutHandle);
+          if (db) db.close();
+          resolve(result as T);
+        };
+
+        tx.onerror = () => {
+          if (timeoutHandle) clearTimeout(timeoutHandle);
+          if (db) db.close();
+          reject(tx.error || new Error("Transaction error"));
+        };
+
+        tx.onabort = () => {
+          if (timeoutHandle) clearTimeout(timeoutHandle);
+          if (db) db.close();
+          reject(new Error("Transaction aborted"));
+        };
+
         const req = task(store);
 
         if (req) {
           req.onsuccess = () => {
-            result = req.result; 
-            // ❌ do NOT resolve here
-          };
-          // If req fails, tx.onerror will catch it usually, but we can bind explicit error too
-          req.onerror = () => {
-             // tx.onerror handles the close/reject
+            result = req.result;
+            // DO NOT resolve here - wait for tx.oncomplete
           };
         } else {
           result = undefined;
         }
       } catch (err) {
-        db.close();
+        if (timeoutHandle) clearTimeout(timeoutHandle);
+        if (db) {
+          try {
+            db.close();
+          } catch (e) {
+            // Ignore close errors
+          }
+        }
         reject(err);
       }
     };
   });
 };
 
-// --- Background Saving ---
-
+// --- Debounced Background Saving ---
+// ✅ NEW: Implements 500ms debounce to batch rapid operations
 const scheduleSave = () => {
   if (!memoryCache) return;
   
-  // Snapshot data to avoid race conditions during async write
-  // Using JSON.parse/stringify is safer for basic objects than structuredClone in older environments
-  const snapshot = JSON.parse(JSON.stringify(memoryCache));
+  // Cancel previous timer if exists
+  if (saveTimer) clearTimeout(saveTimer);
+  
+  // Debounce: wait 500ms before actually saving
+  // This batches multiple rapid add/update calls into single transaction
+  saveTimer = setTimeout(() => {
+    // Snapshot data to avoid race conditions during async write
+    const snapshot = JSON.parse(JSON.stringify(memoryCache));
 
-  // Add to queue: Wait for previous save, then execute new save
-  saveQueue = saveQueue
-    .then(() => performDBOperation('readwrite', (store) => store.put(snapshot, DATA_KEY)))
-    .catch((err) => console.error("Background Save Error:", err));
+    // Add to queue: Wait for previous save, then execute new save
+    saveQueue = saveQueue
+      .then(() => performDBOperation('readwrite', (store) => store.put(snapshot, DATA_KEY)))
+      .catch((err) => {
+        console.error("Background Save Error:", err);
+        // Continue queue even on error to prevent deadlock
+      });
+    
+    saveTimer = null;
+  }, 500);  // ✅ 500ms debounce window
 };
 
 // --- Initialization ---
@@ -112,7 +148,9 @@ const initDB = async (): Promise<AppData> => {
       if (legacyData) {
         try {
           data = JSON.parse(legacyData);
-        } catch (e) { console.error("Migration failed", e); }
+        } catch (e) { 
+          console.error("Migration failed", e); 
+        }
       }
     }
 
@@ -184,7 +222,7 @@ export const addSale = async (sale: Omit<Sale, 'id' | 'code' | 'timestamp'>): Pr
   };
   
   memoryCache.sales.unshift(newSale);
-  scheduleSave();
+  scheduleSave();  // ✅ Non-blocking: debounced save
   return newSale;
 };
 
@@ -199,7 +237,7 @@ export const addPurchase = async (purchase: Omit<Purchase, 'id' | 'timestamp'>):
   };
   
   memoryCache.purchases.unshift(newPurchase);
-  scheduleSave();
+  scheduleSave();  // ✅ Non-blocking: debounced save
   return newPurchase;
 };
 
@@ -217,7 +255,7 @@ export const addDebt = async (debt: Omit<Debt, 'id' | 'code' | 'timestamp' | 'st
   };
   
   memoryCache.debts.unshift(newDebt);
-  scheduleSave();
+  scheduleSave();  // ✅ Non-blocking: debounced save
   return newDebt;
 };
 
@@ -245,7 +283,7 @@ export const addDebtPayment = async (debtId: string, payment: Omit<DebtPayment, 
       memoryCache.debts[debtIndex].status = 'unpaid';
     }
 
-    scheduleSave();
+    scheduleSave();  // ✅ Non-blocking: debounced save
   }
 };
 
@@ -254,7 +292,7 @@ export const deleteSale = async (id: string): Promise<void> => {
   if (!memoryCache) return;
   
   memoryCache.sales = memoryCache.sales.filter((s) => s.id !== id);
-  scheduleSave();
+  scheduleSave();  // ✅ Non-blocking: debounced save
 };
 
 export const deletePurchase = async (id: string): Promise<void> => {
@@ -262,7 +300,7 @@ export const deletePurchase = async (id: string): Promise<void> => {
   if (!memoryCache) return;
 
   memoryCache.purchases = memoryCache.purchases.filter((p) => p.id !== id);
-  scheduleSave();
+  scheduleSave();  // ✅ Non-blocking: debounced save
 };
 
 export const deleteDebt = async (id: string): Promise<void> => {
@@ -270,7 +308,7 @@ export const deleteDebt = async (id: string): Promise<void> => {
   if (!memoryCache) return;
 
   memoryCache.debts = memoryCache.debts.filter((d) => d.id !== id);
-  scheduleSave();
+  scheduleSave();  // ✅ Non-blocking: debounced save
 };
 
 // --- Import/Export ---
@@ -296,7 +334,7 @@ export const importFromJSON = async (file: File): Promise<boolean> => {
         if (json.sales && Array.isArray(json.sales)) {
           memoryCache = json;
           isInitialized = true;
-          scheduleSave();
+          scheduleSave();  // ✅ Non-blocking: debounced save
           resolve(true);
         } else {
           reject(new Error('Invalid structure'));
@@ -314,7 +352,7 @@ export const clearAllData = async (): Promise<void> => {
   isInitialized = true;
   localStorage.removeItem(OLD_LOCAL_STORAGE_KEY);
   
-  // Force a clear on the DB via queue
+  // Force a clear on the DB via queue with timeout protection
   saveQueue = saveQueue
     .then(() => performDBOperation('readwrite', (store) => store.clear()))
     .then(() => performDBOperation('readwrite', (store) => store.put(memoryCache, DATA_KEY)))
