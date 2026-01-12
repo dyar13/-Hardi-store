@@ -24,8 +24,12 @@ const PurchasesTab: React.FC<PurchasesTabProps> = ({ lang, onUpdate, store }) =>
   const [filter, setFilter] = useState({ query: '' });
 
   const loadData = async () => {
-    const data = await getAppData();
-    setPurchases(data.purchases);
+    try {
+      const data = await getAppData();
+      setPurchases(data.purchases);
+    } catch (error) {
+      console.error('Failed to load purchases:', error);
+    }
   };
 
   useEffect(() => {
@@ -38,23 +42,32 @@ const PurchasesTab: React.FC<PurchasesTabProps> = ({ lang, onUpdate, store }) =>
     setLoading(true);
 
     try {
-        await addPurchase({
-            date: form.date,
-            productName: form.productName,
-            quantity: parseInt(form.quantity),
-            totalCost: parseFloat(form.totalCost),
-            currency: form.currency,
-            store: store
-        });
+      // Add purchase and get the new record
+      const newPurchase = await addPurchase({
+        date: form.date,
+        productName: form.productName,
+        quantity: parseInt(form.quantity),
+        totalCost: parseFloat(form.totalCost),
+        currency: form.currency,
+        store: store
+      });
 
-        setForm({ ...form, productName: '', quantity: '', totalCost: '' });
-        await loadData();
-        onUpdate();
+      // Optimistic update: add to UI immediately
+      setPurchases(prev => [newPurchase, ...prev]);
+      
+      // Reset form
+      setForm({ ...form, productName: '', quantity: '', totalCost: '' });
+      
+      // Callback
+      onUpdate();
+      
+      // Background sync (non-blocking)
+      loadData().catch(console.error);
     } catch (error) {
-        console.error("Failed to add purchase", error);
-        alert("Error saving record.");
+      console.error("Failed to add purchase:", error);
+      alert(t.errorSave || "Error saving record.");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -62,14 +75,21 @@ const PurchasesTab: React.FC<PurchasesTabProps> = ({ lang, onUpdate, store }) =>
     if (confirm(t.confirmClear)) {
       setLoading(true);
       try {
-          await deletePurchase(id);
-          await loadData();
-          onUpdate();
+        // Optimistic update: remove from UI immediately
+        setPurchases(prev => prev.filter(p => p.id !== id));
+        
+        // Then persist
+        await deletePurchase(id);
+        
+        // Callback
+        onUpdate();
       } catch (error) {
-          console.error("Failed to delete purchase", error);
-          alert("Error deleting record.");
+        console.error("Failed to delete purchase:", error);
+        alert(t.errorDelete || "Error deleting record.");
+        // Reload on error
+        loadData();
       } finally {
-          setLoading(false);
+        setLoading(false);
       }
     }
   };
@@ -77,7 +97,7 @@ const PurchasesTab: React.FC<PurchasesTabProps> = ({ lang, onUpdate, store }) =>
   const filteredPurchases = purchases
     .filter(p => p.store === store)
     .filter(p => 
-        p.productName.toLowerCase().includes(filter.query.toLowerCase())
+      p.productName.toLowerCase().includes(filter.query.toLowerCase())
     );
 
   return (
@@ -85,10 +105,10 @@ const PurchasesTab: React.FC<PurchasesTabProps> = ({ lang, onUpdate, store }) =>
       {/* Input Form */}
       <div className="glass-panel p-8 rounded-2xl">
         <h3 className="text-xl font-bold text-[var(--text-primary)] mb-8 flex items-center gap-4 font-[Orbitron]">
-            <div className="p-3 bg-[#00d9f5]/10 border border-[#00d9f5]/30 rounded-xl">
-                <ShoppingCart size={24} className="text-[#00d9f5]" />
-            </div>
-            {t.addPurchase}
+          <div className="p-3 bg-[#00d9f5]/10 border border-[#00d9f5]/30 rounded-xl">
+            <ShoppingCart size={24} className="text-[#00d9f5]" />
+          </div>
+          {t.addPurchase}
         </h3>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
           <div>
@@ -126,7 +146,7 @@ const PurchasesTab: React.FC<PurchasesTabProps> = ({ lang, onUpdate, store }) =>
           <div>
             <label className="block text-sm text-[var(--text-secondary)] mb-3 font-bold uppercase tracking-wider">{t.cost}</label>
             <div className="flex gap-1">
-                <input 
+              <input 
                 type="number" 
                 required
                 min="0"
@@ -134,15 +154,15 @@ const PurchasesTab: React.FC<PurchasesTabProps> = ({ lang, onUpdate, store }) =>
                 className="w-full bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-l-xl px-5 py-4 text-[var(--text-primary)] text-lg focus:outline-none focus:border-[#00d9f5] transition-colors"
                 value={form.totalCost}
                 onChange={e => setForm({...form, totalCost: e.target.value})}
-                />
-                 <select 
-                    className="bg-[var(--bg-secondary)] border border-l-0 border-[var(--glass-border)] rounded-r-xl px-3 text-[var(--text-primary)] text-sm focus:outline-none focus:border-[#00d9f5]"
-                    value={form.currency}
-                    onChange={e => setForm({...form, currency: e.target.value as Currency})}
-                >
-                    <option value="IQD">IQD</option>
-                    <option value="USD">USD</option>
-                </select>
+              />
+              <select 
+                className="bg-[var(--bg-secondary)] border border-l-0 border-[var(--glass-border)] rounded-r-xl px-3 text-[var(--text-primary)] text-sm focus:outline-none focus:border-[#00d9f5]"
+                value={form.currency}
+                onChange={e => setForm({...form, currency: e.target.value as Currency})}
+              >
+                <option value="IQD">IQD</option>
+                <option value="USD">USD</option>
+              </select>
             </div>
           </div>
           <div className="flex items-end">
@@ -186,8 +206,8 @@ const PurchasesTab: React.FC<PurchasesTabProps> = ({ lang, onUpdate, store }) =>
                 <tr>
                   <td colSpan={5} className="px-8 py-20 text-center text-[var(--text-secondary)]">
                     <div className="flex flex-col items-center gap-4">
-                        <Package size={64} className="opacity-20" />
-                        <p className="font-[Orbitron] uppercase tracking-widest text-lg opacity-50">{t.noData}</p>
+                      <Package size={64} className="opacity-20" />
+                      <p className="font-[Orbitron] uppercase tracking-widest text-lg opacity-50">{t.noData}</p>
                     </div>
                   </td>
                 </tr>
