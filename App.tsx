@@ -137,15 +137,49 @@ const App: React.FC = () => {
                 </div>
             </div>
 
-            {/* CENTER: TITLE */}
+            {/* CENTER: ANIMATED TITLE WITH BANNER */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-visible">
-                 <div className="flex flex-col items-center">
-                     <h1 className="text-[40px] font-black font-[Orbitron] italic tracking-widest text-[var(--text-primary)] drop-shadow-[0_0_10px_var(--accent-glow)]">
+                 <div className="relative flex flex-col items-center">
+                     {/* Futuristic Banner Behind Title */}
+                     <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-16 bg-gradient-to-r from-transparent via-[var(--accent-main)]/5 to-transparent">
+                         <div className="absolute inset-0 border-y border-[var(--accent-main)]/20"></div>
+                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-[var(--accent-main)] to-transparent"></div>
+                         <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-[var(--accent-main)] to-transparent"></div>
+                     </div>
+
+                     {/* Main Title with Multi-Layer Glow */}
+                     <h1 
+                         className="text-[48px] font-black font-[Orbitron] italic tracking-[0.3em] text-[var(--text-primary)] relative z-10"
+                         style={{
+                             textShadow: `
+                                 0 0 10px var(--accent-main),
+                                 0 0 20px var(--accent-main),
+                                 0 0 30px var(--accent-main),
+                                 0 0 40px rgba(0, 245, 160, 0.5),
+                                 0 0 70px rgba(0, 245, 160, 0.3),
+                                 0 0 100px rgba(0, 245, 160, 0.2),
+                                 2px 2px 4px rgba(0, 0, 0, 0.8)
+                             `,
+                             animation: 'breathe 4s ease-in-out infinite, glow-pulse 3s ease-in-out infinite'
+                         }}
+                     >
                          HARDI STORE
                      </h1>
-                     <span className="text-xs font-bold tracking-[0.5em] text-[var(--accent-main)] uppercase">
-                         {activeStore === 'clothes' ? t.storeClothes : t.storeShoes}
-                     </span>
+                     
+                     {/* Subtitle */}
+                     <div className="flex items-center gap-2 mt-2 relative z-10">
+                         <div className="h-px w-8 bg-gradient-to-r from-transparent to-[var(--accent-main)]"></div>
+                         <span className="text-xs font-bold tracking-[0.5em] text-[var(--accent-main)] uppercase animate-pulse" style={{ textShadow: '0 0 10px var(--accent-main)' }}>
+                             {activeStore === 'clothes' ? t.storeClothes : t.storeShoes}
+                         </span>
+                         <div className="h-px w-8 bg-gradient-to-l from-transparent to-[var(--accent-main)]"></div>
+                     </div>
+
+                     {/* Decorative Corner Brackets */}
+                     <div className="absolute -left-16 -top-8 text-[var(--accent-main)]/30 text-6xl font-thin">╱</div>
+                     <div className="absolute -right-16 -top-8 text-[var(--accent-main)]/30 text-6xl font-thin">╲</div>
+                     <div className="absolute -left-16 -bottom-8 text-[var(--accent-main)]/30 text-6xl font-thin rotate-180">╲</div>
+                     <div className="absolute -right-16 -bottom-8 text-[var(--accent-main)]/30 text-6xl font-thin rotate-180">╱</div>
                  </div>
             </div>
 
@@ -154,7 +188,7 @@ const App: React.FC = () => {
                 <div className="text-xs text-[var(--accent-main)] font-[Orbitron] tracking-[0.2em] uppercase mb-2">System Online</div>
                 <div className="flex items-center gap-3 justify-end">
                      <span className="w-2 h-2 bg-[var(--accent-main)] rounded-full animate-pulse shadow-[0_0_8px_var(--accent-main)]"></span>
-                     <span className="font-[Orbitron] text-[var(--text-secondary)] text-sm">v1.7.0</span>
+                     <span className="font-[Orbitron] text-[var(--text-secondary)] text-sm">v1.7.1</span>
                 </div>
             </div>
             
@@ -215,7 +249,7 @@ const App: React.FC = () => {
             <button onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className="w-full text-left p-6 rounded-xl bg-[var(--glass-bg)] text-[var(--text-primary)] text-xl font-[Orbitron] border border-[var(--glass-border)]">{t.dashboard}</button>
             <button onClick={() => { setActiveTab('sales'); setMobileMenuOpen(false); }} className="w-full text-left p-6 rounded-xl bg-[var(--glass-bg)] text-[var(--text-primary)] text-xl font-[Orbitron] border border-[var(--glass-border)]">{t.sales}</button>
             <button onClick={() => { setActiveTab('inventory'); setMobileMenuOpen(false); }} className="w-full text-left p-6 rounded-xl bg-[var(--glass-bg)] text-[var(--text-primary)] text-xl font-[Orbitron] border border-[var(--glass-border)]">{t.inventory}</button>
-            <button onClick={() => { setActiveTab('debts'); setMobileMenuOpen(false); }} className="w-full text-left p-6 rounded-xl bg-[var(--glass-bg)] text-[var(--text-primary)] text-xl font-[Orbitron] border border-[var(--glass-border)]">{t.debts}</button>
+            <button onClick={() => { setActiveTab('debts'); setMobileMenuOpen(false); }} className="w-full text-left p-6 rounded-xl bg-[var(--glass-bg)] text-[var(--text-primary)] text-xl font-[var(--glass-border)]">{t.debts}</button>
             <button onClick={() => { setActiveTab('settings'); setMobileMenuOpen(false); }} className="w-full text-left p-6 rounded-xl bg-[var(--glass-bg)] text-[var(--text-primary)] text-xl font-[Orbitron] border border-[var(--glass-border)]">{t.settings}</button>
         </div>
       )}
