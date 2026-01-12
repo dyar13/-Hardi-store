@@ -4,6 +4,10 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap');
 
+/* ===================================================================== */
+/* THEME & COLOR TOKENS */
+/* ===================================================================== */
+
 :root {
   /* Default Dark / Green Theme */
   --bg-primary: #02040a;
@@ -13,8 +17,18 @@
   --glass-bg: rgba(10, 15, 30, 0.65);
   --glass-border: rgba(255, 255, 255, 0.08);
   
+  /* Primary Accent: Neon Green */
   --accent-main: #00f5a0;
   --accent-glow: rgba(0, 245, 160, 0.4);
+  
+  /* Secondary Accents */
+  --accent-cyan: #00d9f5;
+  --accent-rose: #ff2a6d;
+  
+  /* Background gradient */
+  --gradient-start: #02040a;
+  --gradient-mid: #0f172a;
+  --gradient-end: #02040a;
 }
 
 .theme-light {
@@ -24,7 +38,10 @@
   --text-secondary: #64748b;
   --glass-bg: rgba(255, 255, 255, 0.85);
   --glass-border: rgba(0, 0, 0, 0.05);
-  --accent-glow: rgba(0, 0, 0, 0.1);
+  --accent-glow: rgba(0, 100, 100, 0.15);
+  --gradient-start: #f0f2f5;
+  --gradient-mid: #ffffff;
+  --gradient-end: #f0f2f5;
 }
 
 .accent-blue {
@@ -37,42 +54,87 @@
   --accent-glow: rgba(255, 42, 109, 0.4);
 }
 
+/* ===================================================================== */
+/* BODY & TYPOGRAPHY */
+/* ===================================================================== */
+
+html, body {
+  width: 100%;
+  height: 100%;
+}
+
 body {
   font-family: 'Rajdhani', 'Noto Sans Arabic', sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
   overflow: hidden;
+  position: relative;
+}
+
+/* Premium Background with Gradient + Fog + Noise */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    /* Subtle noise texture overlay (very light) */
+    url('data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" result="noise" /%3E%3CfeColorMatrix in="noise" type="saturate" values="0.3" /%3E%3C/filter%3E%3Crect width="100" height="100" fill="%23020408" filter="url(%23noise)" /%3E%3C/svg%3E'),
+    /* Radial glow from center */
+    radial-gradient(ellipse at 50% 0%, rgba(0, 245, 160, 0.08) 0%, rgba(0, 217, 245, 0.04) 25%, transparent 60%),
+    /* Deep gradient background */
+    linear-gradient(135deg, 
+      var(--gradient-start) 0%, 
+      var(--gradient-mid) 50%, 
+      var(--gradient-end) 100%);
+  background-attachment: fixed;
+  background-size: auto, auto, auto;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 1;
 }
 
 h1, h2, h3, .hud-font {
   font-family: 'Orbitron', 'Noto Sans Arabic', sans-serif;
 }
 
-/* --- Neon Scrollbar --- */
+/* ===================================================================== */
+/* SCROLLBAR STYLING */
+/* ===================================================================== */
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-primary); 
-}
-::-webkit-scrollbar-thumb {
-  background: var(--glass-border); 
-  border-radius: 4px;
-  border: 1px solid var(--bg-primary);
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-main);
-  box-shadow: 0 0 10px var(--accent-glow); 
+  width: 10px;
+  height: 10px;
 }
 
-/* Glass Panel / HUD Card */
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 245, 160, 0.3);
+  border-radius: 6px;
+  border: 2px solid var(--bg-primary);
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-main);
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+/* ===================================================================== */
+/* GLASS PANEL / HUD CARD */
+/* ===================================================================== */
+
 .glass-panel {
   background: var(--glass-bg);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
   position: relative;
   overflow: hidden;
 }
@@ -81,23 +143,165 @@ h1, h2, h3, .hud-font {
 .glass-panel::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.15), 
+    transparent);
+  pointer-events: none;
 }
 
-/* Animations */
-@keyframes breathe {
-  0%, 100% { text-shadow: 0 0 10px var(--accent-glow); opacity: 1; }
-  50% { text-shadow: 0 0 20px var(--accent-glow), 0 0 30px var(--accent-glow); opacity: 0.9; }
+/* Inner glow for active state */
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15);
 }
+
+/* ===================================================================== */
+/* ANIMATIONS */
+/* ===================================================================== */
+
+@keyframes breathe {
+  0%, 100% {
+    text-shadow: 0 0 10px var(--accent-glow);
+    opacity: 1;
+  }
+  50% {
+    text-shadow: 0 0 20px var(--accent-glow), 0 0 30px var(--accent-glow);
+    opacity: 0.9;
+  }
+}
+
 .animate-breathe {
   animation: breathe 4s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in {
   animation: fadeIn 0.4s ease-out forwards;
 }
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px var(--accent-glow);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--accent-glow), 0 0 30px var(--accent-glow);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes neon-flicker {
+  0%, 100% {
+    opacity: 1;
+  }
+  5%, 10% {
+    opacity: 0.7;
+  }
+  15% {
+    opacity: 1;
+  }
+}
+
+.animate-neon-flicker {
+  animation: neon-flicker 0.15s ease-in-out infinite;
+}
+
+/* ===================================================================== */
+/* FORM ELEMENTS ENHANCEMENT */
+/* ===================================================================== */
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="email"],
+select,
+textarea {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="email"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent-main);
+  box-shadow: 0 0 15px rgba(0, 245, 160, 0.3), inset 0 0 5px rgba(0, 245, 160, 0.1);
+  outline: none;
+}
+
+/* ===================================================================== */
+/* TEXT UTILITY CLASSES */
+/* ===================================================================== */
+
+.glow-text {
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.text-accent {
+  color: var(--accent-main);
+}
+
+.text-accent-cyan {
+  color: var(--accent-cyan);
+}
+
+.text-accent-rose {
+  color: var(--accent-rose);
+}
+
+/* ===================================================================== */
+/* UTILITY SPACING & SIZING FOR LAPTOP OPTIMIZATION */
+/* ===================================================================== */
+
+/* Ensure reasonable max-width for ultra-wide screens */
+.max-w-ultra {
+  max-width: 1600px;
+}
+
+.min-h-screen-safe {
+  min-height: 100vh;
+}
+
+/* ===================================================================== */
+/* LIGHT MODE ADJUSTMENTS */
+/* ===================================================================== */
+
+.theme-light .glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+.theme-light ::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
+}
+
+.theme-light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8);
 }
