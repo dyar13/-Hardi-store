@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* Default Dark / Green Theme */
+  --bg-primary: #02040a;
+  --bg-secondary: #0f172a;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --glass-bg: rgba(10, 15, 30, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  
+  --accent-main: #00f5a0;
+  --accent-glow: rgba(0, 245, 160, 0.4);
+}
+
+.theme-light {
+  --bg-primary: #f0f2f5;
+  --bg-secondary: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.05);
+  --accent-glow: rgba(0, 0, 0, 0.1);
+}
+
+.accent-blue {
+  --accent-main: #00d9f5;
+  --accent-glow: rgba(0, 217, 245, 0.4);
+}
+
+.accent-rose {
+  --accent-main: #ff2a6d;
+  --accent-glow: rgba(255, 42, 109, 0.4);
+}
+
+body {
+  font-family: 'Rajdhani', 'Noto Sans Arabic', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow: hidden;
+}
+
+h1, h2, h3, .hud-font {
+  font-family: 'Orbitron', 'Noto Sans Arabic', sans-serif;
+}
+
+/* --- Neon Scrollbar --- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary); 
+}
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border); 
+  border-radius: 4px;
+  border: 1px solid var(--bg-primary);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-main);
+  box-shadow: 0 0 10px var(--accent-glow); 
+}
+
+/* Glass Panel / HUD Card */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle top highlight for 3D feel */
+.glass-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+}
+
+/* Animations */
+@keyframes breathe {
+  0%, 100% { text-shadow: 0 0 10px var(--accent-glow); opacity: 1; }
+  50% { text-shadow: 0 0 20px var(--accent-glow), 0 0 30px var(--accent-glow); opacity: 0.9; }
+}
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

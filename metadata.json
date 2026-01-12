@@ -1,0 +1,5 @@
+{
+  "name": "Hardi Store",
+  "description": "A modern, offline-first accounting application for store management featuring sales tracking, inventory purchase management, and multi-currency support (USD/IQD) with Kurdish and English localization.",
+  "requestFramePermissions": []
+}
