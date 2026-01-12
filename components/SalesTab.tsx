@@ -27,8 +27,12 @@ const SalesTab: React.FC<SalesTabProps> = ({ lang, onUpdate, store }) => {
   });
 
   const loadData = async () => {
-    const data = await getAppData();
-    setSales(data.sales);
+    try {
+      const data = await getAppData();
+      setSales(data.sales);
+    } catch (error) {
+      console.error('Failed to load sales:', error);
+    }
   };
 
   useEffect(() => {
@@ -41,22 +45,31 @@ const SalesTab: React.FC<SalesTabProps> = ({ lang, onUpdate, store }) => {
     setLoading(true);
 
     try {
-        await addSale({
-            date: form.date,
-            amount: parseFloat(form.amount),
-            currency: form.currency,
-            note: form.note,
-            store: store // Save to active store
-        });
+      // Optimistic update: add to UI immediately
+      const newSale = await addSale({
+        date: form.date,
+        amount: parseFloat(form.amount),
+        currency: form.currency,
+        note: form.note,
+        store: store
+      });
 
-        setForm({ ...form, amount: '', note: '' }); // Reset fields but keep date/currency
-        await loadData();
-        onUpdate();
+      // Update UI with new sale optimistically
+      setSales(prev => [newSale, ...prev]);
+      
+      // Reset form (keep date/currency for convenience)
+      setForm({ ...form, amount: '', note: '' });
+      
+      // Callback for parent component
+      onUpdate();
+      
+      // Background sync (non-blocking)
+      loadData().catch(console.error);
     } catch (error) {
-        console.error("Failed to add sale:", error);
-        alert("Error saving data. Please try again.");
+      console.error("Failed to add sale:", error);
+      alert(t.errorSave || "Error saving data. Please try again.");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -64,26 +77,33 @@ const SalesTab: React.FC<SalesTabProps> = ({ lang, onUpdate, store }) => {
     if (confirm(t.confirmClear)) {
       setLoading(true);
       try {
-          await deleteSale(id);
-          await loadData();
-          onUpdate();
+        // Optimistic update: remove from UI immediately
+        setSales(prev => prev.filter(s => s.id !== id));
+        
+        // Then persist
+        await deleteSale(id);
+        
+        // Callback
+        onUpdate();
       } catch (error) {
-          console.error("Failed to delete sale:", error);
-          alert("Error deleting record.");
+        console.error("Failed to delete sale:", error);
+        alert(t.errorDelete || "Error deleting record.");
+        // Reload on error to restore correct state
+        loadData();
       } finally {
-          setLoading(false);
+        setLoading(false);
       }
     }
   };
 
   const filteredSales = sales
-    .filter(s => s.store === store) // Filter by active store
+    .filter(s => s.store === store)
     .filter(s => {
-        const matchesQuery = s.code.toLowerCase().includes(filter.query.toLowerCase()) || 
-                             (s.note && s.note.toLowerCase().includes(filter.query.toLowerCase()));
-        const matchesStart = filter.startDate ? s.date >= filter.startDate : true;
-        const matchesEnd = filter.endDate ? s.date <= filter.endDate : true;
-        return matchesQuery && matchesStart && matchesEnd;
+      const matchesQuery = s.code.toLowerCase().includes(filter.query.toLowerCase()) || 
+                           (s.note && s.note.toLowerCase().includes(filter.query.toLowerCase()));
+      const matchesStart = filter.startDate ? s.date >= filter.startDate : true;
+      const matchesEnd = filter.endDate ? s.date <= filter.endDate : true;
+      return matchesQuery && matchesStart && matchesEnd;
     });
 
   return (
@@ -91,10 +111,10 @@ const SalesTab: React.FC<SalesTabProps> = ({ lang, onUpdate, store }) => {
       {/* Input Form */}
       <div className="glass-panel p-8 rounded-2xl">
         <h3 className="text-xl font-bold text-[var(--text-primary)] mb-8 flex items-center gap-4 font-[Orbitron]">
-            <div className="p-3 bg-[var(--accent-main)]/10 border border-[var(--accent-main)]/30 rounded-xl">
-                <Plus size={24} className="text-[var(--accent-main)]" />
-            </div>
-            {t.addSale}
+          <div className="p-3 bg-[var(--accent-main)]/10 border border-[var(--accent-main)]/30 rounded-xl">
+            <Plus size={24} className="text-[var(--accent-main)]" />
+          </div>
+          {t.addSale}
         </h3>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <div>
@@ -166,19 +186,19 @@ const SalesTab: React.FC<SalesTabProps> = ({ lang, onUpdate, store }) => {
           />
         </div>
         <div className="flex gap-4">
-            <input 
-                type="date" 
-                className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl px-6 py-4 text-[var(--text-secondary)] text-base focus:outline-none focus:border-[var(--accent-main)]"
-                value={filter.startDate}
-                onChange={e => setFilter({...filter, startDate: e.target.value})}
-            />
-            <span className="self-center text-[var(--text-secondary)] font-bold text-xl">-</span>
-            <input 
-                type="date" 
-                className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl px-6 py-4 text-[var(--text-secondary)] text-base focus:outline-none focus:border-[var(--accent-main)]"
-                value={filter.endDate}
-                onChange={e => setFilter({...filter, endDate: e.target.value})}
-            />
+          <input 
+            type="date" 
+            className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl px-6 py-4 text-[var(--text-secondary)] text-base focus:outline-none focus:border-[var(--accent-main)]"
+            value={filter.startDate}
+            onChange={e => setFilter({...filter, startDate: e.target.value})}
+          />
+          <span className="self-center text-[var(--text-secondary)] font-bold text-xl">-</span>
+          <input 
+            type="date" 
+            className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl px-6 py-4 text-[var(--text-secondary)] text-base focus:outline-none focus:border-[var(--accent-main)]"
+            value={filter.endDate}
+            onChange={e => setFilter({...filter, endDate: e.target.value})}
+          />
         </div>
       </div>
 
@@ -200,8 +220,8 @@ const SalesTab: React.FC<SalesTabProps> = ({ lang, onUpdate, store }) => {
                 <tr>
                   <td colSpan={5} className="px-8 py-20 text-center text-[var(--text-secondary)]">
                     <div className="flex flex-col items-center gap-4">
-                        <FileText size={64} className="opacity-20" />
-                        <p className="font-[Orbitron] uppercase tracking-widest text-lg opacity-50">{t.noData}</p>
+                      <FileText size={64} className="opacity-20" />
+                      <p className="font-[Orbitron] uppercase tracking-widest text-lg opacity-50">{t.noData}</p>
                     </div>
                   </td>
                 </tr>
@@ -210,10 +230,10 @@ const SalesTab: React.FC<SalesTabProps> = ({ lang, onUpdate, store }) => {
                   <tr key={sale.id} className="hover:bg-[var(--accent-main)]/5 transition-colors group">
                     <td className="px-8 py-5 font-mono text-[var(--accent-main)] text-base">{sale.code}</td>
                     <td className="px-8 py-5 text-[var(--text-primary)]">
-                        <div className="flex items-center gap-3">
-                            <Calendar size={18} className="text-[var(--text-secondary)]" />
-                            {sale.date}
-                        </div>
+                      <div className="flex items-center gap-3">
+                        <Calendar size={18} className="text-[var(--text-secondary)]" />
+                        {sale.date}
+                      </div>
                     </td>
                     <td className="px-8 py-5">
                       <span className={`inline-flex items-center gap-2 font-bold font-[Orbitron] text-xl ${sale.currency === 'USD' ? 'text-[var(--accent-main)]' : 'text-[#00d9f5]'}`}>
