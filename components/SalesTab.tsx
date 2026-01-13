@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sale, Language, Currency, StoreType } from '../types';
 import { addSale, deleteSale, getAppData } from '../services/storageService';
 import { TRANSLATIONS } from '../constants';
-import { Plus, Search, Trash2, Calendar, FileText } from 'lucide-react';
-
+import { Plus, Search, Trash2, Calendar } from 'lucide-react';
 interface SalesTabProps {
   lang: Language;
   onUpdate: () => void;
