@@ -141,11 +141,26 @@ const App: React.FC = () => {
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-visible">
                  <div className="relative flex flex-col items-center">
                      {/* Futuristic Banner Behind Title */}
-                     <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-16 bg-gradient-to-r from-transparent via-[var(--accent-main)]/5 to-transparent">
-                         <div className="absolute inset-0 border-y border-[var(--accent-main)]/20"></div>
-                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-[var(--accent-main)] to-transparent"></div>
-                         <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-[var(--accent-main)] to-transparent"></div>
-                     </div>
+                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-24 bg-gradient-to-r from-purple-900/40 via-blue-600/40 to-purple-900/40 rounded-2xl border border-purple-500/30">
+            <div className="absolute inset-0 rounded-2xl overflow-hidden">
+              {/* Galaxy Effect - Stars */}
+              <div className="absolute inset-0 opacity-60">
+                {[...Array(20)].map((_, i) => (
+                  <div key={i} className="absolute w-1 h-1 bg-white rounded-full" style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    opacity: Math.random() * 0.7 + 0.3,
+                    animation: `twinkle ${Math.random() * 3 + 2}s ease-in-out infinite`,
+                  }} />
+                ))}
+              </div>
+              {/* Nebula Glow */}
+              <div className="absolute left-1/4 top-1/2 -translate-y-1/2 w-48 h-48 bg-purple-500 rounded-full blur-3xl opacity-20"></div>
+              <div className="absolute right-1/4 top-1/2 -translate-y-1/2 w-48 h-48 bg-blue-500 rounded-full blur-3xl opacity-20"></div>
+              {/* Border Gradient */}
+              <div className="absolute inset-0 rounded-2xl border-t border-purple-400/40 pointer-events-none"></div>
+            </div>
+          </div>
 
                      {/* Main Title with Multi-Layer Glow */}
                      <h1 
