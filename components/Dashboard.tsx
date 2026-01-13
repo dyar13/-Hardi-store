@@ -3,7 +3,7 @@ import { AppData, Language, StoreType } from '../types';
 import { getAppData } from '../services/storageService';
 import { TRANSLATIONS } from '../constants';
 import StatCard from './StatCard';
-import { ShoppingCart, TrendingUp, Wallet, ArrowUpRight, ArrowDownRight from 'lucide-react';
+import { ShoppingCart, TrendingUp, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface DashboardProps {
