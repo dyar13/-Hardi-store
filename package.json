@@ -15,8 +15,7 @@
     "productName": "Hardi Store",
     "win": {
       "target": "nsis",
-      "icon": "Hardi_Store_BIG.ico"
-    },
+    "icon": "./HARDI_STORE_DESKTOP.ico",    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
