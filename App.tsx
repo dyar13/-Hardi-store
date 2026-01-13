@@ -80,8 +80,7 @@ const App: React.FC = () => {
     <div 
         className={`flex h-screen overflow-hidden ${lang === 'ku' ? 'dir-rtl' : 'dir-ltr'} theme-${theme} accent-${accent}`} 
         dir={lang === 'ku' ? 'rtl' : 'ltr'}
-        style={{ backgroundColor: 'var(--bg-primary)' }}
-    >
+style={{ background: 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 25%, #0f1628 50%, #151d2e 75%, #0a0e27 100%)', backgroundColor: 'var(--bg-primary)' }}    >
       
       {/* Sidebar (Left Rail) - Desktop */}
       <div className="hidden md:flex w-28 flex-col items-center py-6 bg-[var(--glass-bg)] backdrop-blur-xl border-r border-[var(--glass-border)] z-20 relative shadow-[5px_0_30px_rgba(0,0,0,0.1)]">
