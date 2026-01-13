@@ -2,8 +2,7 @@ import React from 'react';
 import { Language, ThemeMode, AccentColor } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { exportToJSON, importFromJSON, clearAllData } from '../services/storageService';
-import { Download, Upload, Trash2, Globe, Palette, Moon, Sun } from 'lucide-react';
-
+import { Globe, Palette } from 'lucide-react';
 interface SettingsTabProps {
   lang: Language;
   setLang: (l: Language) => void;
