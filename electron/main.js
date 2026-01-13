@@ -1,30 +1,58 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 
+// Disable hardware acceleration to prevent GPU freezes on some systems
+app.disableHardwareAcceleration();
+
+// Set garbage collection to run more frequently
+if (global.gc) {
+  setInterval(() => global.gc(), 15000); // Run GC every 15 seconds
+}
+
+let mainWindow;
+
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1024,
     minHeight: 768,
     title: "Hardi Store",
-    icon: path.join(__dirname, '../Hardi_Store_BIG.ico'), // Load the icon from root
+    icon: path.join(__dirname, './HARDI_STORE_DESKTOP.ico'),
     backgroundColor: '#02040a',
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false, // For simple local storage apps
+      contextIsolation: false,
+      enableRemoteModule: true,
+      preload: undefined,
+      v8CacheOptions: 'bypassHeatCheck'
     },
-    autoHideMenuBar: true, // Hides the top menu bar (File, Edit, etc)
+    autoHideMenuBar: true,
+    show: false // Don't show until ready
   });
 
-  // In production, load the built html file
+  // Clear cache on startup
+  mainWindow.webContents.session.clearCache();
+  mainWindow.webContents.session.clearStorageData({
+    storages: ['localstorage', 'sessionstorage']
+  });
+
+  // Load the app
   if (app.isPackaged) {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   } else {
-    // In development, load from Vite server
     mainWindow.loadURL('http://localhost:5173');
-    // mainWindow.webContents.openDevTools(); // Optional: Open DevTools
   }
+
+  // Show window when ready
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+  });
+
+  // Optimize memory usage
+  mainWindow.webContents.on('render-process-gone', () => {
+    mainWindow = null;
+  });
 }
 
 app.whenReady().then(() => {
@@ -42,3 +70,12 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
+
+// Enable V8 code caching
+if (mainWindow && mainWindow.webContents) {
+  mainWindow.webContents.session.enableNetworkEmulation({
+    offline: false,
+    downloadThroughput: 10 * 1024 * 1024 / 8,
+    uploadThroughput: 10 * 1024 * 1024 / 8
+  });
+}
