@@ -7,7 +7,6 @@ import PurchasesTab from './components/PurchasesTab';
 import DebtsTab from './components/DebtsTab';
 import SettingsTab from './components/SettingsTab';
 import { LayoutDashboard, ShoppingCart, DollarSign, Settings, Menu, X, ArrowRightLeft, Calendar, Shirt, Footprints } from 'lucide-react';
-
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [lang, setLang] = useState<Language>('ku');
