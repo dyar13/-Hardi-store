@@ -4,8 +4,7 @@ import { getAppData } from '../services/storageService';
 import { TRANSLATIONS } from '../constants';
 import StatCard from './StatCard';
 import { ShoppingCart, TrendingUp, Wallet, ArrowUpRight, ArrowDownRight, Clock, Activity } from 'lucide-react';
-// import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'; // Unused chart imports
-interface DashboardProps {
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';interface DashboardProps {
   lang: Language;
   store: StoreType;
 }
